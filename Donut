@@ -1,0 +1,71 @@
+import tkinter as tk
+import math
+
+# Constants
+A = 0
+B = 0
+theta_spacing = 0.07
+phi_spacing = 0.02
+illumination = ".,-~:;=!*#$@"
+width = 800
+height = 600
+char_width = 8
+char_height = 12
+
+# Initialize tkinter
+root = tk.Tk()
+root.title("Spinning Donut")
+canvas = tk.Canvas(root, width=width, height=height, bg='black')
+canvas.pack()
+
+def render_frame(A, B):
+    output = [[' ' for _ in range(80)] for _ in range(24)]
+    zbuffer = [[0 for _ in range(80)] for _ in range(24)]
+
+    cos_A = math.cos(A)
+    sin_A = math.sin(A)
+    cos_B = math.cos(B)
+    sin_B = math.sin(B)
+
+    for theta in [i * theta_spacing for i in range(int(2 * math.pi / theta_spacing))]:
+        cos_theta = math.cos(theta)
+        sin_theta = math.sin(theta)
+        for phi in [i * phi_spacing for i in range(int(2 * math.pi / phi_spacing))]:
+            cos_phi = math.cos(phi)
+            sin_phi = math.sin(phi)
+            circle_x = cos_theta
+            circle_y = sin_theta
+
+            x = circle_x * (cos_B * cos_phi + sin_A * sin_B * sin_phi) - circle_y * cos_A * sin_B
+            y = circle_x * (sin_B * cos_phi - sin_A * cos_B * sin_phi) + circle_y * cos_A * cos_B
+            z = cos_A * circle_x * sin_phi + circle_y * sin_A + 5
+            ooz = 1 / z
+
+            xp = int(40 + 30 * ooz * y)  # Vertical spin
+            yp = int(12 + 15 * ooz * x)  # Horizontal spin
+            luminance_index = int(8 * ((cos_phi * cos_theta * sin_B) - (cos_A * cos_theta * sin_phi) - (sin_A * sin_theta) + (cos_B * (cos_A * sin_theta - cos_theta * sin_A * sin_phi))))
+
+            if 0 <= xp < 80 and 0 <= yp < 24:
+                if ooz > zbuffer[yp][xp]:
+                    zbuffer[yp][xp] = ooz
+                    output[yp][xp] = illumination[max(0, min(11, luminance_index))]
+
+    canvas.delete("all")
+    for y in range(24):
+        for x in range(80):
+            char = output[y][x]
+            if char != ' ':
+                canvas.create_text(x * char_width, y * char_height, text=char, fill="white", font=("Courier", char_height))
+
+def update_frame():
+    global A, B
+    render_frame(A, B)
+    A += theta_spacing
+    B += phi_spacing
+    root.after(30, update_frame)
+
+# Start the animation
+update_frame()
+
+# Run the tkinter main loop
+root.mainloop()
